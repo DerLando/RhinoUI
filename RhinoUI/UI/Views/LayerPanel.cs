@@ -36,29 +36,40 @@ namespace RhinoUI.UI.Views
             Grid = new GridView();
             UpdateGridDataStore(doc);
 
+            // setup event handlers
+            Grid.MouseDoubleClick += On_GridDoubleClicked;
+            Grid.CellClick += On_CellClick;
+
             // define columns
+            // Name
             Grid.Columns.Add(new GridColumn
             {
                 DataCell = new TextBoxCell { Binding = Binding.Property<Layer, string>(l => l.Name)},
-                HeaderText = "Name"
+                HeaderText = "Name",
+                Editable = true
             });
 
+            // Current active layer
             Grid.Columns.Add(new GridColumn
             {
                 DataCell = new CheckBoxCell{ Binding = Binding.Delegate<Layer, bool?>(l => l == Rhino.RhinoDoc.ActiveDoc.Layers.CurrentLayer)},
-                HeaderText = "Current"
+                HeaderText = "Current",
             });
 
+            // Visible
             Grid.Columns.Add(new GridColumn
             {
                 DataCell = new CheckBoxCell { Binding = Binding.Property<Layer, bool?>(l => l.IsVisible)},
-                HeaderText = "On"
+                HeaderText = "On",
+                Editable = true
             });
 
+            // Locked
             Grid.Columns.Add(new GridColumn
             {
                 DataCell = new CheckBoxCell { Binding = Binding.Property<Layer, bool?>(l => l.IsLocked)},
-                HeaderText = "Locked"
+                HeaderText = "Locked",
+                Editable = true
             });
 
             // Color
@@ -66,7 +77,8 @@ namespace RhinoUI.UI.Views
             Grid.Columns.Add(new GridColumn
             {
                 DataCell = new ImageViewCell { Binding = Binding.Property<Layer, Image>(l => new Bitmap(bitmapSize, bitmapSize, PixelFormat.Format24bppRgb, from index in Enumerable.Repeat(0, bitmapSize * bitmapSize) select l.Color.ToEto()))},
-                HeaderText = "Color"
+                HeaderText = "Color",
+                Editable = true
             });
 
             // Material
@@ -99,7 +111,60 @@ namespace RhinoUI.UI.Views
 
             Content = Grid;
 
-            RhinoDoc.LayerTableEvent += OnLayerTableEvent;
+            RhinoDoc.LayerTableEvent += On_LayerTableEvent;
+        }
+
+        private void On_CellClick(object sender, GridCellMouseEventArgs e)
+        {
+            // test if color
+            if (e.Column == 4)
+            {
+                var layer = e.Item as Layer;
+                var color = layer.Color;
+                Dialogs.ShowColorDialog(ref color);
+                layer.Color = color;
+            }
+
+            // test if material
+            if (e.Column == 5)
+            {
+                // Do nothing for now
+            }
+
+            // test if linetype
+            if (e.Column == 6)
+            {
+                var layer = e.Item as Layer;
+                var lineTypeIndex = layer.LinetypeIndex;
+                Dialogs.ShowSelectLinetypeDialog(ref lineTypeIndex, false);
+                layer.LinetypeIndex = lineTypeIndex;
+            }
+
+            // test if print color
+            if (e.Column == 7)
+            {
+                var layer = e.Item as Layer;
+                var color = layer.PlotColor;
+                Dialogs.ShowColorDialog(ref color);
+                layer.PlotColor = color;
+            }
+        }
+
+        /// <summary>
+        /// Handles double clicks on a grid row
+        /// Default behaviour is to set the layer corresponding to the double clicked row
+        /// as the new active layer
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void On_GridDoubleClicked(object sender, MouseEventArgs e)
+        {
+            var rowIndices = Grid.SelectedRows.ToArray();
+            if (rowIndices.Length == 1)
+            {
+                var selectedLayer = Grid.DataStore.ToArray()[rowIndices[0]] as Layer;
+                RhinoDoc.ActiveDoc.Layers.SetCurrentLayerIndex(selectedLayer.Index, true);
+            }
         }
 
         private void UpdateGridDataStore(RhinoDoc doc)
@@ -107,7 +172,7 @@ namespace RhinoUI.UI.Views
             Grid.DataStore = doc.Layers;
         }
 
-        private void OnLayerTableEvent(object sender, LayerTableEventArgs e)
+        private void On_LayerTableEvent(object sender, LayerTableEventArgs e)
         {
             UpdateGridDataStore(e.Document);
         }

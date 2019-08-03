@@ -57,6 +57,7 @@
     <Compile Include="RhinoUIPlugIn.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="UI\Custom\EtoCustomCell.cs" />
     <Compile Include="UI\Views\LayerPanel.cs" />
   </ItemGroup>
   <ItemGroup>
